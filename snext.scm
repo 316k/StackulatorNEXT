@@ -41,9 +41,14 @@
     (* fct . ,(lambda (stack) (two-args-stack-fct * stack)))
     (/ fct . ,(lambda (stack) (two-args-stack-fct / stack)))
     (> fct . ,(lambda (stack) (two-args-stack-fct > stack)))
+    (>= fct . ,(lambda (stack) (two-args-stack-fct >= stack)))
+    (< fct . ,(lambda (stack) (two-args-stack-fct < stack)))
+    (<= fct . ,(lambda (stack) (two-args-stack-fct <= stack)))
+    (dup fct . ,(lambda (stack) (cons (car stack) stack)))
     (bye fct . ,(lambda (stack) (exit)))
     (reverse fct . ,(lambda (stack) (reverse stack)))
     ($length fct . ,(lambda (stack) (cons (length stack) stack)))
+    ($clear fct . ,(lambda (stack) '()))
     (eval fct . ,(lambda (stack)
 		   (if (pair? (car stack))
 		       (parse (cdr stack) (car stack))
@@ -51,16 +56,19 @@
     ; Macros
     ($dump macro . ,(lambda (stack src) (pp stack) (cons stack src)))
     ($env macro . ,(lambda (stack src) (pp env) (cons stack src))) 
+    ; 1 if (1 2 3 4) => (1 2 3 4) eval
     (|if|  macro .
-     ; 1 if (1 2 3 4) => (1 2 3 4) eval
      ,(lambda (stack src)
 	(if (slack-bool (car stack))
 	    (cons (cdr stack) (cons (car src) (cons 'eval (cdr src))))
 	    (cons (cdr stack) (cdr src)))))
-;  (while macro .
-;	   ,(lambda (stack src)
-;	      (let ((expr (car src)))
-;		(cons stack (append `(|if| (,expr while ,expr) eval) (cdr src))))))
+    ; 4 while (1 - "test" . cr) ... => 4 (1 - "test" . cr) eval while (1 - "test" . cr) ...
+    (while macro .
+	   ,(lambda (stack src)
+	      (if (slack-bool (car stack))
+		  (let ((body (car src)))
+		    (cons stack (append (list body 'eval 'while body) (cdr src))))
+		  (cons stack (cdr src)))))
     ; TODO : clean stuff instead of prepending everything
     (-> macro .
 	,(lambda (stack src)
@@ -73,7 +81,6 @@
   (let ((pair (assoc key env)))
     (and pair (cdr pair))))
 
-; TODO : ajouter des listes
 (define (tokenize line)
   (reverse
    (let loop
