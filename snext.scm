@@ -33,8 +33,7 @@
 
 (define env
   ; Built-in functions
-  `((my-stuff var . 10)
-    (cr fct . ,(lambda (stack) (newline) stack))
+  `((cr fct . ,(lambda (stack) (newline) stack))
     (|.| fct . ,(lambda (stack) (print (car stack)) (cdr stack)))
     (+ fct . ,(lambda (stack) (two-args-stack-fct + stack)))
     (- fct . ,(lambda (stack) (two-args-stack-fct - stack)))
@@ -193,5 +192,3 @@
 
 ; Run !
 (main '())
-
-;(write (map eval (tokenize (string->list (read-line))))) (newline)
