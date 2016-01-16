@@ -34,7 +34,8 @@
 (define env
   ; Built-in functions
   `((cr fct . ,(lambda (stack) (newline) stack))
-    (|.| fct . ,(lambda (stack) (print (car stack)) (cdr stack)))
+    (p fct . ,(lambda (stack) (print (car stack)) stack))
+    (pp fct . ,(lambda (stack) (println (car stack)) stack))
     (+ fct . ,(lambda (stack) (two-args-stack-fct + stack)))
     (- fct . ,(lambda (stack) (two-args-stack-fct - stack)))
     (* fct . ,(lambda (stack) (two-args-stack-fct * stack)))
@@ -44,6 +45,7 @@
     (< fct . ,(lambda (stack) (two-args-stack-fct < stack)))
     (<= fct . ,(lambda (stack) (two-args-stack-fct <= stack)))
     (dup fct . ,(lambda (stack) (cons (car stack) stack)))
+    (x fct . ,(lambda (stack) (cdr stack)))
     (bye fct . ,(lambda (stack) (exit)))
     (reverse fct . ,(lambda (stack) (reverse stack)))
     ($length fct . ,(lambda (stack) (cons (length stack) stack)))
@@ -52,6 +54,7 @@
 		   (if (pair? (car stack))
 		       (parse (cdr stack) (car stack))
 		       stack)))
+    (|.| macro . ,(lambda (stack src) (cons stack (cons 'eval src))))
     ; Macros
     ($dump macro . ,(lambda (stack src) (pp stack) (cons stack src)))
     ($env macro . ,(lambda (stack src) (pp env) (cons stack src))) 
@@ -90,7 +93,7 @@
      (define c (and (not (null? code)) (car code)))
      (define rest (if (null? code) #f (cdr code)))
      (cond
-      ((null? code)
+      ((or (null? code) (eq? c #\#))
        consumed)
       ; Appending text
       ((and text? (not (member c '(#\" #\\))))
@@ -99,6 +102,7 @@
       ((and text? (eq? c #\"))
        (loop (cons (string-append (car consumed) (string #\")) (cdr consumed)) rest #f #f))
       ; Escaped "
+      ; TODO : escaped #
       ((and text?
 	    (not (null? rest))
 	    (eq? c #\\)
