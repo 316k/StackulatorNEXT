@@ -7,17 +7,17 @@ It's the spiritual descendant of [Stackulator II](https://github.com/316k/stacku
 ## Example code
 
 ```
-5 10 / print cr
+5 10 / pp
 # prints 1/2
 
 250 -> a
 a 10 / -> a
-a print cr
+a pp
 # prints 25
 
 # functions
 
 (dup *) -> squared
-5 squared . print
+5 squared . pp
 # prints 25
 ```
