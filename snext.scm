@@ -93,7 +93,7 @@
      (define c (and (not (null? code)) (car code)))
      (define rest (if (null? code) #f (cdr code)))
      (cond
-      ((or (null? code) (eq? c #\#))
+      ((or (null? code) (and (not text?) (eq? c #\#)))
        consumed)
       ; Appending text
       ((and text? (not (member c '(#\" #\\))))
@@ -101,8 +101,7 @@
       ; Stop appending text
       ((and text? (eq? c #\"))
        (loop (cons (string-append (car consumed) (string #\")) (cdr consumed)) rest #f #f))
-      ; Escaped "
-      ; TODO : escaped #
+      ; Escaped chars
       ((and text?
 	    (not (null? rest))
 	    (eq? c #\\)
