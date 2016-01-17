@@ -22,9 +22,9 @@
      ((and (= parens-depth 0) (eq? (car right) #\)))
       (cons (reverse left) (cdr right)))
      ((eq? (car right) #\))
-      (loop (cons #\) left) (cdr right) (+ parens-depth 1)))
+      (loop (cons #\) left) (cdr right) (- parens-depth 1)))
      ((eq? (car right) #\()
-      (loop (cons #\( left) (cdr right) (- parens-depth 1)))
+      (loop (cons #\( left) (cdr right) (+ parens-depth 1)))
      (else
       (loop (cons (car right) left) (cdr right) parens-depth)))))
 
@@ -35,7 +35,7 @@
   ; Built-in functions
   `((cr fct . ,(lambda (stack) (newline) stack))
     (p fct . ,(lambda (stack) (print (car stack)) stack))
-    (pp fct . ,(lambda (stack) (println (car stack)) stack))
+    (pp fct . ,(lambda (stack) (write (car stack)) (newline) stack))
     (+ fct . ,(lambda (stack) (two-args-stack-fct + stack)))
     (- fct . ,(lambda (stack) (two-args-stack-fct - stack)))
     (* fct . ,(lambda (stack) (two-args-stack-fct * stack)))
@@ -58,12 +58,22 @@
     ; Macros
     ($dump macro . ,(lambda (stack src) (pp stack) (cons stack src)))
     ($env macro . ,(lambda (stack src) (pp env) (cons stack src))) 
-    ; 1 if (1 2 3 4) => (1 2 3 4) eval
+    ; 1 if (1 2 3 4) [else (...)] => (1 2 3 4) eval
+	; 0 if (0) else (1) => (1) eval
     (|if|  macro .
      ,(lambda (stack src)
-	(if (slack-bool (car stack))
-	    (cons (cdr stack) (cons (car src) (cons 'eval (cdr src))))
-	    (cons (cdr stack) (cdr src)))))
+		(let*
+			((truth (slack-bool (car stack)))
+			 (true (car src))
+			 (false (and (>= (length src) 3) (eq? (cadr src) 'else) (caddr src)))
+			 (rest (if false
+					   (cdddr src)
+					   (cdr src))))
+		  (if truth
+			  (cons (cdr stack) (cons true (cons 'eval rest)))
+			  (if false
+				  (cons (cdr stack) (cons false (cons 'eval rest)))
+				  (cons (cdr stack) rest))))))
     ; 4 while (1 - "test" . cr) ... => 4 (1 - "test" . cr) eval while (1 - "test" . cr) ...
     (while macro .
 	   ,(lambda (stack src)
@@ -123,7 +133,7 @@
        (loop (cons (string-append (car consumed) (string c)) (cdr consumed)) rest text? #t))))))
 
 
-(define (eval token)
+(define (eval-token token)
   (let ((number (and (string? token) (string->number token))))
     (cond
      (number
@@ -131,7 +141,7 @@
      ((and (string? token) (eq? (string-ref token 0) #\"))
       (substring token 1 (- (string-length token) 1)))
      ((pair? token)
-      (map eval token))
+      (map eval-token token))
      (else
       (string->symbol token)))))
 
@@ -181,7 +191,7 @@
       stack)
     (lambda ()
       (parse stack
-	     (map eval (tokenize (string->list (read-line!)))))))))
+	     (map eval-token (tokenize (string->list (read-line!)))))))))
 
 ; Graceful error handling
 (define random (make-random-source))
