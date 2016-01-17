@@ -20,4 +20,9 @@ a pp
 (dup *) -> squared
 5 squared . pp
 # prints 25
+
+(dup 1 > if (dup 1 - factorial . *)) -> factorial
+
+6 factorial . pp
+# Outputs 720
 ```
